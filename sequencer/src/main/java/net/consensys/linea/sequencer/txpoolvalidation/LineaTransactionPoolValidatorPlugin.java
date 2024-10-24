@@ -137,9 +137,8 @@ public class LineaTransactionPoolValidatorPlugin extends AbstractLineaRequiredPl
             transactionPoolValidatorHandler.handle(addedTransactionContext);
           } catch (final Exception e) {
             log.warn(
-              "Error calculating transaction profitability for block {}({})",
-              addedTransactionContext.getBlockHeader().getNumber(),
-              addedTransactionContext.getBlockHeader().getBlockHash(),
+              "Error calculating transaction profitability for transaction {}",
+              addedTransactionContext.getHash(),
               e);
           }
         });
