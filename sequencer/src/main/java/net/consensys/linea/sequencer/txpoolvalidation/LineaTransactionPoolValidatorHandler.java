@@ -1,14 +1,18 @@
 package net.consensys.linea.sequencer.txpoolvalidation;
 
+import java.util.Optional;
+
 import org.hyperledger.besu.datatypes.Transaction;
 
 public class LineaTransactionPoolValidatorHandler {
-  public void handle(Transaction addedTransactionContext) {
-    var gasLimit = addedTransactionContext.getGasLimit();
-    var gasPrice = addedTransactionContext.getGasPrice();
-    var maxPriorityFeePerGas = addedTransactionContext.getMaxPriorityFeePerGas();
-    var maxFeePerGas = addedTransactionContext.getMaxFeePerGas();
-    var value = addedTransactionContext.getValue();
-    var hash = addedTransactionContext.getHash();
+
+  private Transaction currentTransaction;
+
+  public void onTransactionAdded(Transaction addedTransaction) {
+    this.currentTransaction = addedTransaction;
+  }
+
+  public Optional<Transaction> getCurrentTransaction() {
+    return Optional.ofNullable(currentTransaction);
   }
 }

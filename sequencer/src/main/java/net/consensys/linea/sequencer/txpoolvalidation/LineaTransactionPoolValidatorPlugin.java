@@ -132,13 +132,13 @@ public class LineaTransactionPoolValidatorPlugin extends AbstractLineaRequiredPl
 
       // Add a transaction added listener to handle profitability calculations when a new transaction is added
       besuEventsService.addTransactionAddedListener(
-        addedTransactionContext -> {
+        addedTransaction -> {
           try {
-            transactionPoolValidatorHandler.handle(addedTransactionContext);
+            transactionPoolValidatorHandler.onTransactionAdded(addedTransaction);
           } catch (final Exception e) {
             log.warn(
               "Error calculating transaction profitability for transaction {}",
-              addedTransactionContext.getHash(),
+              addedTransaction.getHash(),
               e);
           }
         });
