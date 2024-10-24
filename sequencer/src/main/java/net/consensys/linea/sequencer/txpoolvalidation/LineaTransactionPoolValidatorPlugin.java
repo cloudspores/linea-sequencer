@@ -34,6 +34,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.plugin.BesuContext;
 import org.hyperledger.besu.plugin.BesuPlugin;
 import org.hyperledger.besu.plugin.services.BesuConfiguration;
+import org.hyperledger.besu.plugin.services.BesuEvents;
 import org.hyperledger.besu.plugin.services.TransactionPoolValidatorService;
 import org.hyperledger.besu.plugin.services.TransactionSimulationService;
 
@@ -47,6 +48,7 @@ import org.hyperledger.besu.plugin.services.TransactionSimulationService;
 @AutoService(BesuPlugin.class)
 public class LineaTransactionPoolValidatorPlugin extends AbstractLineaRequiredPlugin {
   public static final String NAME = "linea";
+  private BesuContext besuContext;
   private BesuConfiguration besuConfiguration;
   private TransactionPoolValidatorService transactionPoolValidatorService;
   private TransactionSimulationService transactionSimulationService;
@@ -59,6 +61,7 @@ public class LineaTransactionPoolValidatorPlugin extends AbstractLineaRequiredPl
 
   @Override
   public void doRegister(final BesuContext context) {
+    besuContext = context;
     besuConfiguration =
         context
             .getService(BesuConfiguration.class)
@@ -87,6 +90,8 @@ public class LineaTransactionPoolValidatorPlugin extends AbstractLineaRequiredPl
   @Override
   public void start() {
     super.start();
+
+    final var transactionPoolValidatorHandler = new LineaTransactionPoolValidatorHandler();
 
     try (Stream<String> lines =
         Files.lines(
@@ -119,6 +124,25 @@ public class LineaTransactionPoolValidatorPlugin extends AbstractLineaRequiredPl
               l1L2BridgeSharedConfiguration(),
               rejectedTxJsonRpcManager));
 
+      final var besuEventsService =
+        besuContext
+          .getService(BesuEvents.class)
+          .orElseThrow(
+            () -> new RuntimeException("Failed to obtain BesuEvents from the BesuContext."));
+
+      // Add a transaction added listener to handle profitability calculations when a new transaction is added
+      besuEventsService.addTransactionAddedListener(
+        addedTransactionContext -> {
+          try {
+            transactionPoolValidatorHandler.handle(addedTransactionContext);
+          } catch (final Exception e) {
+            log.warn(
+              "Error calculating transaction profitability for block {}({})",
+              addedTransactionContext.getBlockHeader().getNumber(),
+              addedTransactionContext.getBlockHeader().getBlockHash(),
+              e);
+          }
+        });
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
