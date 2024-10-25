@@ -30,7 +30,7 @@ import org.hyperledger.besu.plugin.data.BlockHeader;
 public class SelectorProfitabilityMetrics {
 
   private final Map<Long, Map<Hash, TransactionProfitabilityData>> txProfitabilityDataCacheByBlock =
-    new ConcurrentHashMap<>();
+      new ConcurrentHashMap<>();
 
   /**
    * Handles the list of transactions by calculating their profitability based on the supplied cache
@@ -40,26 +40,26 @@ public class SelectorProfitabilityMetrics {
    * @param transactions The list of transactions to process
    */
   public void handleNewBlock(
-    final BlockHeader blockHeader, List<? extends Transaction> transactions) {
+      final BlockHeader blockHeader, List<? extends Transaction> transactions) {
 
     log.info(
-      "New block number {}, txProfitabilityDataCache content: {}",
-      blockHeader.getNumber(),
-      txProfitabilityDataCacheByBlock);
+        "New block number {}, txProfitabilityDataCache content: {}",
+        blockHeader.getNumber(),
+        txProfitabilityDataCacheByBlock);
 
     purgePreviousBlockFromCache(blockHeader.getNumber());
 
     // get and remove cached data for this block
     final var txProfitabilityDataCache =
-      txProfitabilityDataCacheByBlock.remove(blockHeader.getNumber());
+        txProfitabilityDataCacheByBlock.remove(blockHeader.getNumber());
 
     // if the cache is empty we are not building blocks, so nothing to do
     if (txProfitabilityDataCache != null && !txProfitabilityDataCache.isEmpty()) {
       final Wei baseFee =
-        blockHeader
-          .getBaseFee()
-          .map(Wei::fromQuantity)
-          .orElseThrow(() -> new IllegalStateException("Base fee market expected"));
+          blockHeader
+              .getBaseFee()
+              .map(Wei::fromQuantity)
+              .orElseThrow(() -> new IllegalStateException("Base fee market expected"));
       transactions.forEach(tx -> process(txProfitabilityDataCache, baseFee, tx));
     }
   }
@@ -81,49 +81,49 @@ public class SelectorProfitabilityMetrics {
    * @param transaction The transaction being processed
    */
   private void process(
-    final Map<Hash, TransactionProfitabilityData> txProfitabilityDataCache,
-    final Wei baseFee,
-    Transaction transaction) {
+      final Map<Hash, TransactionProfitabilityData> txProfitabilityDataCache,
+      final Wei baseFee,
+      Transaction transaction) {
     final var selectorProfitabilityData = txProfitabilityDataCache.remove(transaction.getHash());
     if (selectorProfitabilityData != null) {
       final var effectivePriorityFee =
-        selectorProfitabilityData.effectiveGasPrice.subtract(baseFee);
+          selectorProfitabilityData.effectiveGasPrice.subtract(baseFee);
       final var ratio =
-        selectorProfitabilityData.profitablePriorityFee.getValue().doubleValue()
-          / effectivePriorityFee.getValue().doubleValue();
+          selectorProfitabilityData.profitablePriorityFee.getValue().doubleValue()
+              / effectivePriorityFee.getValue().doubleValue();
       log.info(
-        "Tx {} profitability data found {}, baseFee {}, effectivePayingPriorityFee {}, ratio (calculatedProfitablePriorityFee/effectivePayingPriorityFee) {}",
-        transaction.getHash(),
-        selectorProfitabilityData,
-        baseFee.toHumanReadableString(),
-        effectivePriorityFee.toHumanReadableString(),
-        ratio);
+          "Tx {} profitability data found {}, baseFee {}, effectivePayingPriorityFee {}, ratio (calculatedProfitablePriorityFee/effectivePayingPriorityFee) {}",
+          transaction.getHash(),
+          selectorProfitabilityData,
+          baseFee.toHumanReadableString(),
+          effectivePriorityFee.toHumanReadableString(),
+          ratio);
     } else {
       log.info("Cached profitability data not found for tx {}", transaction.getHash());
     }
   }
 
   public void remember(
-    final long blockNumber,
-    final Hash hash,
-    final Wei transactionGasPrice,
-    final Wei profitablePriorityFeePerGas) {
+      final long blockNumber,
+      final Hash hash,
+      final Wei transactionGasPrice,
+      final Wei profitablePriorityFeePerGas) {
     txProfitabilityDataCacheByBlock
-      .computeIfAbsent(blockNumber, unused -> new HashMap<>())
-      .put(
-        hash,
-        new TransactionProfitabilityData(transactionGasPrice, profitablePriorityFeePerGas));
+        .computeIfAbsent(blockNumber, unused -> new HashMap<>())
+        .put(
+            hash,
+            new TransactionProfitabilityData(transactionGasPrice, profitablePriorityFeePerGas));
   }
 
   record TransactionProfitabilityData(Wei effectiveGasPrice, Wei profitablePriorityFee) {
     @Override
     public String toString() {
       return "{"
-        + "effectivePaidGasPrice="
-        + effectiveGasPrice.toHumanReadableString()
-        + ", calculatedProfitablePriorityFee="
-        + profitablePriorityFee.toHumanReadableString()
-        + '}';
+          + "effectivePaidGasPrice="
+          + effectiveGasPrice.toHumanReadableString()
+          + ", calculatedProfitablePriorityFee="
+          + profitablePriorityFee.toHumanReadableString()
+          + '}';
     }
   }
 }
